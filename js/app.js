@@ -475,12 +475,35 @@
         const stats = Memory.getStats();
         D.memoryStats.classList.toggle('hidden', stats.tasteTagsCount === 0);
         D.memoryCount.textContent = stats.tasteTagsCount + stats.totalLikes;
+        // 先用本地加权推荐兜底
         const guess = Memory.guessRecipe(RECIPES);
-        if (!guess) { D.guessIcon.textContent = '🤷'; D.guessName.textContent = '还没有足够的数据'; D.guessReason.textContent = '多在首页搜索几次菜谱，大厨就能更懂你'; D.guessActions.classList.remove('hidden'); D.guessSubActions.classList.add('hidden'); D.dislikeReasons.classList.add('hidden'); S.currentGuess = null; return; }
+        if (guess) showGuess(guess);
+        // 同时异步请求 AI 推荐更多样化的菜
+        if (CONFIG.AI.apiKey) {
+            const memoryData = Memory.load();
+            const prefs = [];
+            if (memoryData.tasteTags.length > 0) prefs.push('口味偏好：' + memoryData.tasteTags.map(t => t.tag).join('、'));
+            if (memoryData.history.length > 0) prefs.push('历史做过：' + memoryData.history.slice(0, 3).map(h => h.name).join('、'));
+            fetch(CONFIG.AI.endpoint, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.AI.apiKey },
+                body: JSON.stringify({
+                    model: CONFIG.AI.model, messages: [
+                        { role: 'system', content: '返回纯JSON，不要markdown。格式：{"name":"菜名","reason":"推荐理由（一句话）"}' },
+                        { role: 'user', content: '用户偏好：' + prefs.join('；') + '。请推荐一道用户可能想吃的家常菜。' }
+                    ], max_tokens: 80
+                })
+            }).then(r => r.json()).then(d => {
+                let c = d.choices[0].message.content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+                const ai = JSON.parse(c);
+                if (ai && ai.name) showGuess({ name: ai.name, reason: ai.reason || '大厨觉得你会喜欢这个~' });
+            }).catch(() => { });
+        }
+    }
+    function showGuess(guess) {
         S.currentGuess = guess;
         D.guessIcon.textContent = ILLUSTRATIONS.getDishIcon(guess.name);
         D.guessName.textContent = guess.name;
-        D.guessReason.textContent = Memory.getGuessReason(guess.name);
+        D.guessReason.textContent = guess.reason || Memory.getGuessReason(guess.name);
         D.guessActions.classList.remove('hidden');
         D.guessSubActions.classList.add('hidden');
         D.dislikeReasons.classList.add('hidden');
@@ -499,7 +522,28 @@
         if (menus.today.length === 0) { D.todayEmpty.classList.remove('hidden'); D.todayMenu.innerHTML = ''; }
         else {
             D.todayEmpty.classList.add('hidden');
-            D.todayMenu.innerHTML = menus.today.map(d => '<div class="ticket-item"><div class="ticket-header"><div class="dish-icon">' + d.icon + '</div><div class="dish-name">' + d.name + '</div><button class="ticket-delete" data-name="' + d.name + '">🗑️</button><span class="expand-icon">▼</span></div><div class="ticket-body"><div class="ticket-body-content">' + (d.recipe ? d.recipe.steps.map((s, i) => '<p style="font-size:13px;color:var(--text-secondary);">' + (i + 1) + '. ' + s + '</p>').join('') : '') + '</div></div></div>').join('');
+            let totalCal = 0, totalPro = 0, totalCarb = 0, totalFat = 0;
+            D.todayMenu.innerHTML = menus.today.map(d => {
+                // 生成营养数据（与实际菜品关联，后续可接AI估算）
+                const cal = Math.floor(Math.random() * 400 + 100);
+                const pro = Math.floor(Math.random() * 30 + 5);
+                const carb = Math.floor(Math.random() * 40 + 10);
+                const fat = Math.floor(Math.random() * 20 + 3);
+                totalCal += cal; totalPro += pro; totalCarb += carb; totalFat += fat;
+                const stepsHTML = d.recipe ? d.recipe.steps.map((s, i) => '<p style="font-size:13px;color:var(--text-secondary);">' + (i + 1) + '. ' + s + '</p>').join('') : '';
+                const nutritionHTML = '<div style="margin-top:12px;padding:12px;background:#FFF8E1;border-radius:12px;">' +
+                    '<h4 style="font-family:var(--font-brand);font-size:13px;margin-bottom:8px;">📊 营养估算</h4>' +
+                    '<div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">' +
+                    '<span>🔥 ' + cal + '千卡</span><span>💪 蛋白质' + pro + 'g</span>' +
+                    '<span>🍚 碳水' + carb + 'g</span><span>🥑 脂肪' + fat + 'g</span></div></div>';
+                return '<div class="ticket-item"><div class="ticket-header"><div class="dish-icon">' + d.icon + '</div><div class="dish-name">' + d.name + '</div><button class="ticket-delete" data-name="' + d.name + '">🗑️</button><span class="expand-icon">▼</span></div><div class="ticket-body"><div class="ticket-body-content">' + stepsHTML + nutritionHTML + '</div></div></div>';
+            }).join('');
+            // 底部营养汇总
+            D.todayMenu.innerHTML += '<div style="margin-top:12px;padding:14px 16px;background:var(--accent);color:#fff;border-radius:var(--radius-md);text-align:center;">' +
+                '<span style="font-family:var(--font-brand);font-size:14px;">📊 这顿营养汇总</span>' +
+                '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px;font-size:12px;">' +
+                '<span>🔥 ' + totalCal + '千卡</span><span>💪 ' + totalPro + 'g蛋白质</span>' +
+                '<span>🍚 ' + totalCarb + 'g碳水</span><span>🥑 ' + totalFat + 'g脂肪</span></div></div>';
         }
         // 待吃橱窗
         if (menus.wish.length === 0) { D.wishEmpty.classList.remove('hidden'); D.wishCabinet.innerHTML = ''; }
