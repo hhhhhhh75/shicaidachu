@@ -424,7 +424,7 @@
         D.recipeModal.classList.remove('hidden');
     }
 
-    // ===== 进阶问答 =====
+    // ===== 进阶问答（10题全新版）=====
     let quizStep = 0;
     function openQuiz() {
         quizStep = 0; S.quizAnswers = {};
@@ -433,41 +433,76 @@
     }
     function showQuizStep() {
         const steps = [
-            { q: '你喜欢什么口味？', opts: ['🌶️ 偏辣', '🧂 清淡', '🍯 偏甜', '🍋 偏酸', '🤷 无所谓'] },
-            { q: '你能花多长时间做饭？', opts: ['⚡ 10分钟搞定', '⏱️ 半小时左右', '🍲 一小时慢慢做', '🤷 无所谓'] },
-            { q: '几个人吃？', opts: ['🧑 就我自己', '👫 两个人', '👨‍👩‍👧 一家三口', '🎉 请客聚餐'] },
-            { q: '营养偏好？', opts: ['💪 高蛋白', '🥗 低脂健康', '🍚 碳水自由', '🤷 无所谓'] },
+            { q: '口味上你更偏爱哪种？', key: 'taste', opts: ['无辣不欢', '清淡原味', '带点甜口', '酸爽开胃', '都行'], custom: true },
+            { q: '这道菜你想花多久？', key: 'time', opts: ['越快越好', '半小时能接受', '愿意慢慢来', '没限制'] },
+            { q: '做给几个人吃？', key: 'people', opts: ['就我一人', '两个人', '一家三口', '四人以上'] },
+            { q: '营养上有什么要求？', key: 'nutrition', opts: ['💪 多蛋白质', '🥗 低脂健康', '🍚 碳水要足', '🔄 没要求'] },
+            { q: '想用什么方式做？', key: 'method', opts: ['快炒', '炖煮', '凉拌', '煎炸烤', '都行'] },
+            { q: '偏好什么菜系？', key: 'cuisine', opts: ['🌶️ 川湘', '🥢 粤菜', '🥟 东北', '🍝 西式', '🍣 日韩', '🔄 不拘'] },
+            { q: '需要下饭吗？', key: 'rice', opts: ['必须下饭！', '能配就行', '不用米饭'] },
+            { q: '有什么忌口？', key: 'allergy', opts: ['无特殊忌口'], custom: true },
+            { q: '预算怎么考虑？', key: 'budget', opts: ['省钱为主', '正常买菜', '丰盛一点'] },
+            { q: '想要什么效果？', key: 'style', opts: ['一锅出省事', '正式搭配', '无所谓'] },
         ];
         if (quizStep >= steps.length) {
-            // 完成，用答案筛选推荐
+            // 全部答完，调用 AI 或 Mock 推荐
             toast('分析完毕，正在为你推荐...');
             D.quizModal.classList.add('hidden');
-            // 模拟筛选（实际可由AI处理）
             const v = D.ingredientInput.value.trim();
             const ings = S.selectedIngredients.length > 0 ? S.selectedIngredients : v.split(/[,，、\s]+/).filter(Boolean);
             if (ings.length === 0) { toast('请先在首页输入食材'); return; }
             if (!canUse()) { toast('试用到期'); showPage('plans'); return; }
             if (!consumeUsage()) { toast('次数用完'); showPage('plans'); return; }
             D.emptyState.classList.add('hidden'); D.resultsHeader.classList.add('hidden'); D.recipeList.innerHTML = ''; D.loadingSpinner.classList.remove('hidden');
-            setTimeout(() => {
-                let results = mockSearch(ings);
-                // 根据偏好微调
-                if (S.quizAnswers['口味'] && S.quizAnswers['口味'] !== '🤷 无所谓') {
-                    if (S.quizAnswers['口味'] === '🌶️ 偏辣') results = results.sort((a, b) => a.name.includes('麻婆') ? -1 : b.name.includes('麻婆') ? 1 : 0);
-                }
-                if (S.quizAnswers['时间'] === '⚡ 10分钟搞定') results = results.filter(r => parseInt(r.time) <= 15);
-                displayResults(results);
-            }, 800);
+            // 如果有 AI Key，把问答结果发给 DeepSeek 做智能推荐
+            if (CONFIG.AI.apiKey) {
+                const ansStr = Object.entries(S.quizAnswers).map(([k, v]) => k + ': ' + v).join('；');
+                fetch(CONFIG.AI.endpoint, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + CONFIG.AI.apiKey },
+                    body: JSON.stringify({
+                        model: CONFIG.AI.model, messages: [
+                            { role: 'system', content: '你是家庭私厨助手。只返回纯JSON数组。' },
+                            { role: 'user', content: '食材：' + ings.join('、') + '。用户偏好：' + ansStr + '。推荐3道最合适的菜，格式：[{"name":"菜名","ingredients":["食材"],"time":"耗时","difficulty":"难度","steps":["说人话步骤"],"tip":"小贴士"}]' }
+                        ], max_tokens: 1200
+                    })
+                }).then(r => r.json()).then(d => {
+                    const c = d.choices[0].message.content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+                    displayResults(JSON.parse(c).map(r => ({ ...r, matchRate: 80, matchCount: ings.length, total: r.ingredients.length })));
+                }).catch(() => {
+                    const results = mockSearch(ings);
+                    displayResults(results);
+                });
+            } else {
+                setTimeout(() => { displayResults(mockSearch(ings)); }, 600);
+            }
             return;
         }
         const s = steps[quizStep];
-        D.quizContent.innerHTML = '<p class="quiz-question">' + s.q + '</p><div class="quiz-options">' + s.opts.map(o => '<button class="quiz-option" data-answer="' + o + '">' + o + '</button>').join('') + '</div>';
+        let html = '<p class="quiz-question">' + s.q + '</p><div class="quiz-options">' +
+            s.opts.map(o => '<button class="quiz-option" data-answer="' + o + '">' + o + '</button>').join('');
+        if (s.custom) {
+            html += '<div style="margin-top:10px;"><input type="text" class="quiz-custom-input" placeholder="或者自己填..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius-xl);font-size:14px;outline:none;"></div>';
+        }
+        html += '</div>';
+        D.quizContent.innerHTML = html;
+        // 选项点击
         D.quizContent.querySelectorAll('.quiz-option').forEach(btn => {
             btn.addEventListener('click', function () {
-                S.quizAnswers[steps[quizStep].q.replace(/你喜欢|你能|几个人|营养偏好？/g, '').replace('？', '').replace('什么', '口味').replace('花多长时间做饭', '时间').replace('几个人吃', '人数').replace('营养偏好', '营养')] = this.dataset.answer;
+                S.quizAnswers[s.key] = this.dataset.answer;
                 quizStep++; showQuizStep();
             });
         });
+        // 自定义输入确认（回车提交）
+        const customInput = D.quizContent.querySelector('.quiz-custom-input');
+        if (customInput) {
+            customInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && this.value.trim()) {
+                    S.quizAnswers[s.key] = this.value.trim();
+                    quizStep++; showQuizStep();
+                }
+            });
+            customInput.focus();
+        }
     }
 
     // ===== 猜猜今天 =====
