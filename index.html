@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FFF8E7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>食材大厨 - 你的私厨助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
+</head>
+
+<body>
+    <div class="app-container" id="appRoot">
+
+        <!-- ===== 顶部导航 ===== -->
+        <header class="app-header">
+            <div class="header-brand" onclick="showPage('home')">
+                <div class="brand-icon">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                        <path d="M10 3L8 14L12 18L13 7L10 3Z" fill="white" stroke="white" stroke-width="1.5"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M12 18C12 18 14 22 20 22C22 22 23 21 23 19C23 17 21 15 19 15C17 15 16 17 16 17"
+                            fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <span class="brand-text">食材大厨</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-ghost btn-sm" id="btnTrial" style="display:none;">⏳ <span
+                        id="trialLabel">试用中</span></button>
+                <button class="btn btn-outline btn-sm" id="btnLogin">登录</button>
+                <button class="btn btn-ghost btn-sm" id="btnLogout" style="display:none;">退出</button>
+            </div>
+        </header>
+
+        <div class="trial-banner hidden" id="trialBanner">试用还剩 <strong id="trialDays">7</strong> 天</div>
+
+        <!-- ===== 底部导航栏 ===== -->
+        <nav class="bottom-nav hidden" id="bottomNav">
+            <button class="nav-item active" data-page="home">
+                <span class="nav-icon">🏠</span><span class="nav-label">首页</span>
+            </button>
+            <button class="nav-item" data-page="guess">
+                <span class="nav-icon">🎲</span><span class="nav-label">猜猜今天</span>
+            </button>
+            <button class="nav-item" data-page="menu">
+                <span class="nav-icon">📋</span><span class="nav-label">我的菜单</span>
+            </button>
+            <button class="nav-item" data-page="plans">
+                <span class="nav-icon">💎</span><span class="nav-label">套餐</span>
+            </button>
+        </nav>
+
+        <!-- ============================================ 页面：首页 ============================================ -->
+        <main class="page-content" id="page-home">
+            <section class="hero-section">
+                <div class="page-decoration floating" style="top:10px;left:10px;"><svg width="50" height="50"
+                        viewBox="0 0 50 50">
+                        <circle cx="25" cy="25" r="22" fill="#FFCCBC" stroke="#E88B6E" stroke-width="2" />
+                        <path d="M18 15c-1 2-1 5 0 7s3 4 5 4c2 0 4-1 5-3" stroke="#E88B6E" stroke-width="2" fill="none"
+                            stroke-linecap="round" />
+                        <circle cx="20" cy="18" r="1.5" fill="#E88B6E" />
+                        <circle cx="26" cy="17" r="1.5" fill="#E88B6E" />
+                    </svg></div>
+                <div class="page-decoration floating" style="top:60px;right:5px;animation-delay:1s;"><svg width="40"
+                        height="50" viewBox="0 0 40 50">
+                        <ellipse cx="20" cy="28" rx="16" ry="20" fill="#FFE0B2" stroke="#E88B6E" stroke-width="2" />
+                        <line x1="20" y1="8" x2="20" y2="18" stroke="#7CB342" stroke-width="2.5"
+                            stroke-linecap="round" />
+                    </svg></div>
+                <h1 class="hero-title">冰箱里有什么？</h1>
+                <p class="hero-subtitle">告诉我你有什么食材，大厨帮你安排</p>
+                <div class="illust-wrap">
+                    <svg width="48" height="48" viewBox="0 0 48 48">
+                        <circle cx="24" cy="24" r="20" fill="#FFCDD2" stroke="#E88B6E" stroke-width="2" /><text x="24"
+                            y="31" text-anchor="middle" font-size="18">🍅</text>
+                    </svg>
+                    <svg width="48" height="48" viewBox="0 0 48 48">
+                        <ellipse cx="24" cy="24" rx="18" ry="20" fill="#FFF9C4" stroke="#E88B6E" stroke-width="2" />
+                        <text x="24" y="29" text-anchor="middle" font-size="16">🥚</text>
+                    </svg>
+                    <svg width="48" height="48" viewBox="0 0 48 48">
+                        <ellipse cx="24" cy="24" rx="16" ry="18" fill="#DCEDC8" stroke="#7CB342" stroke-width="2" />
+                        <text x="24" y="33" text-anchor="middle" font-size="16">🥬</text>
+                    </svg>
+                </div>
+            </section>
+
+            <!-- 输入模式切换 -->
+            <section class="input-section">
+                <div class="input-mode-tabs">
+                    <button class="mode-tab active" data-mode="text">✏️ 文字</button>
+                    <button class="mode-tab" data-mode="voice">🎤 语音</button>
+                    <button class="mode-tab" data-mode="photo">📷 拍照</button>
+                </div>
+
+                <!-- 文字输入 -->
+                <div class="input-wrapper" id="inputText">
+                    <div class="input-group">
+                        <input type="text" class="input-field" id="ingredientInput" placeholder="比如：鸡蛋、番茄、土豆..."
+                            autocomplete="off">
+                        <button class="input-suffix" id="btnSearch">🔍</button>
+                    </div>
+                </div>
+                <!-- 语音输入 -->
+                <div class="input-wrapper hidden" id="inputVoice">
+                    <button class="btn btn-primary btn-lg btn-block voice-btn-big" id="btnVoiceBig">
+                        <span id="voiceIcon">🎤</span> <span id="voiceLabel">点击说话</span>
+                    </button>
+                </div>
+                <!-- 拍照输入 -->
+                <div class="input-wrapper hidden" id="inputPhoto">
+                    <label for="photoInput" class="photo-upload-area">
+                        <span style="font-size:40px;">📸</span>
+                        <span>点击拍照 / 上传图片</span>
+                        <span style="font-size:11px;color:var(--text-hint);">拍冰箱、菜篮、菜市场摊位都可以</span>
+                    </label>
+                    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+                    <div class="photo-preview hidden" id="photoPreview">
+                        <img id="photoImg" src="" alt="预览">
+                        <button class="btn btn-primary btn-sm" id="btnAnalyzePhoto">🔍 识别食材</button>
+                    </div>
+                </div>
+
+                <!-- 快捷标签 -->
+                <div class="quick-tags" id="quickTags">
+                    <span class="tag" data-ingredient="鸡蛋">🥚 鸡蛋</span>
+                    <span class="tag" data-ingredient="番茄">🍅 番茄</span>
+                    <span class="tag" data-ingredient="土豆">🥔 土豆</span>
+                    <span class="tag" data-ingredient="鸡胸肉">🍗 鸡胸肉</span>
+                    <span class="tag" data-ingredient="洋葱">🧅 洋葱</span>
+                    <span class="tag" data-ingredient="青椒">🫑 青椒</span>
+                    <span class="tag" data-ingredient="豆腐">🧈 豆腐</span>
+                    <span class="tag" data-ingredient="面条">🍜 面条</span>
+                    <span class="tag" data-ingredient="猪肉">🥩 猪肉</span>
+                    <span class="tag" data-ingredient="胡萝卜">🥕 胡萝卜</span>
+                </div>
+                <p class="input-hint">💡 点击标签或打字输入，大厨马上帮你找菜谱</p>
+            </section>
+
+            <!-- 进阶问答按钮 -->
+            <section style="padding:0 20px;text-align:center;margin-bottom:12px;">
+                <button class="btn btn-outline btn-sm" id="btnAdvancedMode" style="display:none;">🤔 AI帮你选 —
+                    回答几个问题精准推荐</button>
+            </section>
+
+            <!-- 结果区域 -->
+            <section class="results-section" id="resultsSection">
+                <div class="loading-spinner hidden" id="loadingSpinner">
+                    <div class="spinner-dots">
+                        <div class="spinner-dot"></div>
+                        <div class="spinner-dot"></div>
+                        <div class="spinner-dot"></div>
+                    </div>
+                    <p class="loading-text">大厨正在翻菜谱...</p>
+                </div>
+                <div class="section-header hidden" id="resultsHeader"><span class="section-title">👨‍🍳 大厨推荐</span><span
+                        class="result-count" id="resultCount"></span></div>
+                <div id="recipeList"></div>
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon"><svg width="64" height="64" viewBox="0 0 64 64">
+                            <circle cx="32" cy="32" r="28" fill="#FFE4C4" stroke="#E88B6E" stroke-width="2"
+                                stroke-dasharray="6 3" /><text x="32" y="38" text-anchor="middle"
+                                font-size="22">👨‍🍳</text>
+                        </svg></div>
+                    <p class="empty-text">告诉我你有什么食材<br>大厨帮你想想能做什么好吃的</p>
+                </div>
+            </section>
+
+            <footer class="app-footer">食材大厨 · 你的私人厨房助手 🍳</footer>
+        </main>
+
+        <!-- ============================================ 页面：猜猜今天 ============================================ -->
+        <main class="page-content hidden" id="page-guess">
+            <section class="hero-section" style="padding-bottom:16px;">
+                <h1 class="hero-title">猜你今天想吃什么</h1>
+                <p class="hero-subtitle">根据你的口味和习惯，大厨每日一猜</p>
+            </section>
+            <section class="guess-container" id="guessContainer">
+                <div class="guess-card" id="guessCard">
+                    <div class="guess-card-icon" id="guessIcon">🤔</div>
+                    <h2 class="guess-card-name" id="guessName">点一下试试？</h2>
+                    <p class="guess-card-reason" id="guessReason"></p>
+                    <div class="guess-actions" id="guessActions">
+                        <button class="btn btn-primary btn-lg" id="btnGuessLike">👍 想吃这个</button>
+                        <button class="btn btn-outline" id="btnGuessDislike">👎 换一个</button>
+                        <button class="btn btn-ghost" id="btnGuessRefresh">🔄 再猜一次</button>
+                    </div>
+                    <div class="guess-sub-actions hidden" id="guessSubActions">
+                        <button class="btn btn-primary btn-block" id="btnGuessEatNow">🍽️ 今天就吃！加入菜单</button>
+                        <button class="btn btn-outline btn-block" id="btnGuessWishList">📋 先放着，加入待吃名单</button>
+                    </div>
+                    <div class="dislike-reasons hidden" id="dislikeReasons">
+                        <p style="margin-bottom:8px;font-size:13px;">方便告诉我们为什么不喜欢吗？</p>
+                        <div class="reason-tags">
+                            <span class="reason-tag" data-reason="太辣了">太辣了</span>
+                            <span class="reason-tag" data-reason="太费时间">太费时间</span>
+                            <span class="reason-tag" data-reason="食材不够">食材不够</span>
+                            <span class="reason-tag" data-reason="就是不想吃">就是不想吃</span>
+                            <span class="reason-tag" data-reason="跳过">跳过</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="memory-stats hidden" id="memoryStats">
+                <p style="font-size:12px;color:var(--text-hint);text-align:center;">📊 大厨已记住你的 <strong
+                        id="memoryCount">0</strong> 个偏好</p>
+            </div>
+        </main>
+
+        <!-- ============================================ 页面：我的菜单（双菜单） ============================================ -->
+        <main class="page-content hidden" id="page-menu">
+            <section class="hero-section" style="padding-bottom:8px;">
+                <h1 class="hero-title">我的菜单</h1>
+            </section>
+
+            <!-- 这顿小菜单 -->
+            <section class="menu-section">
+                <div class="section-header">
+                    <span class="section-title">🍽️ 这顿小菜单</span>
+                    <button class="btn btn-ghost btn-sm" id="btnClearToday">清空</button>
+                </div>
+                <div class="ticket-list" id="todayMenu">
+                    <div class="empty-state" style="padding:30px 20px;" id="todayEmpty">
+                        <div class="empty-icon">📜</div>
+                        <p class="empty-text">这顿还没安排菜呢<br>去"猜猜今天"或者首页添加吧</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 待吃名单 -->
+            <section class="menu-section">
+                <div class="section-header">
+                    <span class="section-title">📋 待吃橱窗</span>
+                    <button class="btn btn-ghost btn-sm" id="btnClearWish">清空</button>
+                </div>
+                <div class="cabinet-grid" id="wishCabinet">
+                    <div class="empty-state" style="padding:30px 20px;" id="wishEmpty">
+                        <div class="empty-icon">🪟</div>
+                        <p class="empty-text">橱窗还是空的<br>看到想吃的菜就收进来吧</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ============================================ 页面：套餐 ============================================ -->
+        <main class="page-content hidden" id="page-plans">
+            <section class="hero-section" style="padding-bottom:16px;">
+                <h1 class="hero-title">选择套餐</h1>
+                <p class="hero-subtitle">一杯奶茶钱，大厨为你服务</p>
+            </section>
+            <section class="plans-section" id="plansSection">
+                <div id="plansGrid"></div>
+                <p style="text-align:center;font-size:12px;color:var(--text-hint);margin-top:16px;">
+                    付款后联系客服激活，或等待自动支付接入
+                </p>
+            </section>
+            <!-- 当前套餐状态 -->
+            <div class="plan-status hidden" id="planStatus">
+                <div class="card" style="text-align:center;">
+                    <p>✅ 当前套餐：<strong id="currentPlanName"></strong></p>
+                    <p style="font-size:12px;color:var(--text-hint);" id="currentPlanDetail"></p>
+                </div>
+            </div>
+        </main>
+
+        <!-- ============================================ 菜市场幻想模式 ============================================ -->
+        <main class="page-content hidden" id="page-fantasy">
+            <section class="fantasy-container">
+                <div class="fantasy-upload" id="fantasyUpload">
+                    <label for="fantasyPhotoInput" class="photo-upload-area">
+                        <span style="font-size:48px;">🏪</span>
+                        <span>拍一张菜市场摊位的照片</span>
+                        <span style="font-size:11px;color:var(--text-hint);">AI 会在食材上方浮现可做出的菜肴</span>
+                    </label>
+                    <input type="file" id="fantasyPhotoInput" accept="image/*" capture="environment"
+                        style="display:none;">
+                </div>
+                <div class="fantasy-canvas hidden" id="fantasyCanvas">
+                    <img id="fantasyImg" src="" alt="摊位照片">
+                    <div class="fantasy-overlays" id="fantasyOverlays"></div>
+                    <button class="btn btn-primary btn-sm fantasy-back-btn" onclick="showPage('home')">← 返回</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- ============================================ 弹窗：菜谱详情 ============================================ -->
+        <div class="modal-overlay hidden" id="recipeModal">
+            <div class="modal-sheet" id="recipeSheet">
+                <button class="modal-close" id="btnModalClose">✕</button>
+                <div class="modal-dish-icon" id="modalDishIcon">🍲</div>
+                <h2 class="modal-dish-name" id="modalDishName"></h2>
+                <div class="modal-stats" id="modalStats"></div>
+                <div class="modal-recipe-actions">
+                    <button class="btn btn-primary btn-sm" id="btnModalEatToday">🍽️ 今天吃</button>
+                    <button class="btn btn-outline btn-sm" id="btnModalWish">📋 待吃</button>
+                </div>
+                <div class="ingredient-list" id="modalIngredients"></div>
+                <div class="steps-list" id="modalSteps"></div>
+            </div>
+        </div>
+
+        <!-- ============================================ 弹窗：进阶问答 ============================================ -->
+        <div class="modal-overlay hidden" id="quizModal">
+            <div class="modal-sheet" style="text-align:center;">
+                <button class="modal-close" id="btnQuizClose">✕</button>
+                <div style="font-size:48px;margin:16px;">🤔</div>
+                <h2 style="font-family:var(--font-brand);font-size:20px;margin-bottom:20px;">AI 帮你选</h2>
+                <div id="quizContent"></div>
+            </div>
+        </div>
+
+        <!-- ============================================ 弹窗：登录 ============================================ -->
+        <div class="modal-overlay hidden" id="loginModal">
+            <div class="modal-sheet" style="text-align:center;">
+                <button class="modal-close" id="btnLoginClose">✕</button>
+                <div
+                    style="width:72px;height:72px;background:var(--accent-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:8px auto 16px;">
+                    👨‍🍳</div>
+                <h2 style="font-family:var(--font-brand);font-size:22px;margin-bottom:6px;color:var(--text-primary);">
+                    欢迎来到食材大厨</h2>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">注册即送<strong
+                        style="color:var(--accent-dark);">7天免费试用</strong></p>
+                <div class="input-group" style="margin-bottom:12px;"><input type="tel" class="input-field"
+                        id="phoneInput" placeholder="请输入手机号" maxlength="11" style="padding-right:20px;"></div>
+                <div class="input-group" style="margin-bottom:8px;"><input type="text" class="input-field"
+                        id="codeInput" placeholder="请输入验证码" maxlength="6" style="padding-right:20px;"></div>
+                <button class="btn btn-ghost btn-sm" id="btnSendCode" style="margin-bottom:16px;">获取验证码</button>
+                <button class="btn btn-primary btn-block btn-lg" id="btnDoLogin">注册 / 登录</button>
+                <p style="font-size:11px;color:var(--text-hint);margin-top:12px;">登录即表示同意服务条款和隐私政策</p>
+            </div>
+        </div>
+
+        <!-- ============================================ 弹窗：套餐购买 ============================================ -->
+        <div class="modal-overlay hidden" id="buyModal">
+            <div class="modal-sheet" style="text-align:center;">
+                <button class="modal-close" id="btnBuyClose">✕</button>
+                <div style="font-size:48px;margin:16px;">💎</div>
+                <h2 style="font-family:var(--font-brand);font-size:20px;margin-bottom:8px;" id="buyPlanName"></h2>
+                <p style="font-size:28px;color:var(--accent-dark);font-weight:700;margin-bottom:20px;"
+                    id="buyPlanPrice"></p>
+                <div class="payment-qr" id="paymentQR">
+                    <div
+                        style="width:180px;height:180px;background:var(--accent-light);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:14px;color:var(--text-secondary);">
+                        📱<br>微信收款码<br>（请上传你的收款码）
+                    </div>
+                </div>
+                <p style="font-size:12px;color:var(--text-hint);margin-bottom:8px;">付款时请在备注填写手机号</p>
+                <div class="input-group" style="margin-bottom:8px;"><input type="text" class="input-field"
+                        id="activationCode" placeholder="输入激活码" maxlength="20" style="padding-right:20px;"></div>
+                <button class="btn btn-primary btn-block" id="btnActivate">激活套餐</button>
+                <p style="font-size:11px;color:var(--text-hint);margin-top:8px;">管理员收到付款后发送激活码</p>
+            </div>
+        </div>
+
+        <!-- ============================================ 弹窗：社区分享/菜谱投稿 ============================================ -->
+        <div class="modal-overlay hidden" id="shareModal">
+            <div class="modal-sheet" style="text-align:center;">
+                <button class="modal-close" id="btnShareClose">✕</button>
+                <div style="font-size:48px;margin:16px;">📤</div>
+                <h2 style="font-family:var(--font-brand);font-size:20px;margin-bottom:12px;">分享我的菜单</h2>
+                <div class="share-preview" id="sharePreview"></div>
+                <button class="btn btn-primary btn-block" id="btnCopyShare">📋 复制分享文案</button>
+                <button class="btn btn-outline btn-block" id="btnDownloadShare" style="margin-top:8px;">💾
+                    保存为图片</button>
+            </div>
+        </div>
+
+    </div><!-- /app-container -->
+
+    <div class="toast hidden" id="toast"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/illustrations.js"></script>
+    <script src="js/memory.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/share.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

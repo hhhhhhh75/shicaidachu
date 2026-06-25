@@ -1,0 +1,11 @@
+# temp files
+~$*.docx
+*.py
+__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
