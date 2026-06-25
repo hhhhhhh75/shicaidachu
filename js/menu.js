@@ -3,7 +3,7 @@
  * 这顿小菜单（ticket） + 待吃橱窗（wish cabinet）
  */
 const MenuManager = {
-    STORE_KEY: 'scdc_menus',
+    getKey() { const phone = localStorage.getItem('scdc_current_phone') || ''; return 'scdc_' + phone + '_menus'; },
 
     getDefault() {
         return { today: [], wish: [] };
@@ -11,13 +11,13 @@ const MenuManager = {
 
     load() {
         try {
-            const raw = localStorage.getItem(this.STORE_KEY);
+            const raw = localStorage.getItem(this.getKey());
             return raw ? { ...this.getDefault(), ...JSON.parse(raw) } : this.getDefault();
         } catch (e) { return this.getDefault(); }
     },
 
     save(data) {
-        localStorage.setItem(this.STORE_KEY, JSON.stringify(data));
+        localStorage.setItem(this.getKey(), JSON.stringify(data));
     },
 
     /** 添加菜品到今日菜单 */

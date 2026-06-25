@@ -3,7 +3,7 @@
  * 存储用户偏好，越用越懂你
  */
 const Memory = {
-    STORE_KEY: 'scdc_memory',
+    getKey() { const phone = localStorage.getItem('scdc_current_phone') || ''; return 'scdc_' + phone + '_memory'; },
 
     // 默认空记忆档案
     getDefault() {
@@ -19,7 +19,7 @@ const Memory = {
 
     load() {
         try {
-            const raw = localStorage.getItem(this.STORE_KEY);
+            const raw = localStorage.getItem(this.getKey());
             if (!raw) return this.getDefault();
             const data = JSON.parse(raw);
             // 合并默认值，保证新增字段不会缺失
@@ -30,7 +30,7 @@ const Memory = {
     },
 
     save(data) {
-        localStorage.setItem(this.STORE_KEY, JSON.stringify(data));
+        localStorage.setItem(this.getKey(), JSON.stringify(data));
     },
 
     // 记录做了一道菜

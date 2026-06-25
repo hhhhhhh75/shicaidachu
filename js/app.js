@@ -104,13 +104,14 @@
     }
 
     // ===== 初始化 =====
+    function storageKey(key) { const ph = localStorage.getItem(CONFIG.CURRENT_PHONE_KEY) || ''; return CONFIG.STORAGE_PREFIX + ph + '_' + key; }
     function init() {
-        const u = localStorage.getItem(CONFIG.STORAGE_KEYS.user);
-        const t = localStorage.getItem(CONFIG.STORAGE_KEYS.token);
+        const u = localStorage.getItem(storageKey(CONFIG.STORAGE_KEYS.user));
+        const t = localStorage.getItem(storageKey(CONFIG.STORAGE_KEYS.token));
         if (u && t) { S.user = JSON.parse(u); S.token = t; S.isLoggedIn = true; updateAuthUI(); checkTrial(); }
-        const p = localStorage.getItem(CONFIG.STORAGE_KEYS.plan);
+        const p = localStorage.getItem(storageKey(CONFIG.STORAGE_KEYS.plan));
         if (p) S.plan = JSON.parse(p);
-        const us = localStorage.getItem(CONFIG.STORAGE_KEYS.usage);
+        const us = localStorage.getItem(storageKey(CONFIG.STORAGE_KEYS.usage));
         if (us) S.usageCount = parseInt(us, 10);
         bindEvents();
         console.log('🍳 食材大厨 V3.0');
@@ -223,8 +224,8 @@
             if (!plan) { toast('激活码无效'); return; }
             S.plan = { id: plan.id, type: plan.type, value: plan.value, purchasedAt: Date.now(), name: plan.name };
             S.usageCount = 0;
-            localStorage.setItem(CONFIG.STORAGE_KEYS.plan, JSON.stringify(S.plan));
-            localStorage.setItem(CONFIG.STORAGE_KEYS.usage, '0');
+            localStorage.setItem(storageKey(CONFIG.STORAGE_KEYS.plan), JSON.stringify(S.plan));
+            localStorage.setItem(storageKey(CONFIG.STORAGE_KEYS.usage), '0');
             toast('套餐激活成功！🎉');
             D.buyModal.classList.add('hidden');
             loadPlansPage();
@@ -313,15 +314,19 @@
         if (cd !== '123456') { toast('验证码错误（演示版：123456）'); return; }
         const now = Date.now(), trialEnd = now + CONFIG.TRIAL.days * 86400000;
         S.user = { phone: ph, trial_end: trialEnd, created_at: now }; S.token = 't_' + ph + '_' + now; S.isLoggedIn = true;
-        localStorage.setItem(CONFIG.STORAGE_KEYS.user, JSON.stringify(S.user));
-        localStorage.setItem(CONFIG.STORAGE_KEYS.token, S.token);
-        localStorage.setItem(CONFIG.STORAGE_KEYS.trial, String(trialEnd));
+        const prefix = CONFIG.STORAGE_PREFIX + ph + '_';
+        localStorage.setItem(CONFIG.CURRENT_PHONE_KEY, ph);
+        localStorage.setItem(prefix + CONFIG.STORAGE_KEYS.user, JSON.stringify(S.user));
+        localStorage.setItem(prefix + CONFIG.STORAGE_KEYS.token, S.token);
+        localStorage.setItem(prefix + CONFIG.STORAGE_KEYS.trial, String(trialEnd));
         updateAuthUI(); checkTrial(); D.loginModal.classList.add('hidden');
         toast('登录成功！7天免费试用已激活 🎉');
     }
     function logout() {
+        const ph = (S.user && S.user.phone) || localStorage.getItem(CONFIG.CURRENT_PHONE_KEY) || '';
+        const prefix = CONFIG.STORAGE_PREFIX + ph + '_';
         S.user = null; S.token = null; S.isLoggedIn = false; S.inTrial = false; S.trialDaysLeft = 0; S.plan = null; S.usageCount = 0;
-        ['user', 'token', 'trial', 'plan', 'usage'].forEach(k => localStorage.removeItem(CONFIG.STORAGE_KEYS[k]));
+        ['user', 'token', 'trial', 'plan', 'usage'].forEach(k => localStorage.removeItem(prefix + CONFIG.STORAGE_KEYS[k]));
         updateAuthUI(); clearResults(); toast('已退出登录');
     }
     function updateAuthUI() {
@@ -339,7 +344,7 @@
         return S.usageCount < S.plan.value;
     }
     function canUse() { return S.inTrial || hasValidPlan(); }
-    function consumeUsage() { if (S.inTrial) return true; if (!hasValidPlan()) return false; if (S.plan.type === 'count') { S.usageCount++; localStorage.setItem(CONFIG.STORAGE_KEYS.usage, String(S.usageCount)); return S.usageCount <= S.plan.value; } return true; }
+    function consumeUsage() { if (S.inTrial) return true; if (!hasValidPlan()) return false; if (S.plan.type === 'count') { S.usageCount++; localStorage.setItem(storageKey(CONFIG.STORAGE_KEYS.usage), String(S.usageCount)); return S.usageCount <= S.plan.value; } return true; }
 
     // ===== 菜谱搜索 =====
     function searchRecipes() {

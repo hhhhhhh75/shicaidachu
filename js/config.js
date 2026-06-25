@@ -39,12 +39,14 @@ const CONFIG = {
         { id: 'plan_month', name: '包月', type: 'time', value: 30, price: 12 },
     ],
 
-    // ===== 存储 Key =====
+    // ===== 存储 Key（前缀 + 基础key）=====
+    STORAGE_PREFIX: 'scdc_',
+    CURRENT_PHONE_KEY: 'scdc_current_phone',
     STORAGE_KEYS: {
-        user: 'scdc_user',
-        token: 'scdc_token',
-        trial: 'scdc_trial_end',
-        plan: 'scdc_plan',
-        usage: 'scdc_usage',
+        user: 'user',
+        token: 'token',
+        trial: 'trial_end',
+        plan: 'plan',
+        usage: 'usage',
     },
 };
