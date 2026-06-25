@@ -9,7 +9,7 @@ const CONFIG = {
         mock: false,               // false=使用真实AI
         provider: 'deepseek',
         endpoint: 'https://api.deepseek.com/chat/completions',
-        apiKey: '',               // ⚠️ 填你的 DeepSeek API Key（sk-xxx）
+        apiKey: 'sk-54febcbee4a6485fa71fbd6bb20ce33b',               // ⚠️ 填你的 DeepSeek API Key（sk-xxx）
         model: 'deepseek-chat',
         maxTokens: 1500,
         temperature: 0.8,
