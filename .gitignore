@@ -1,5 +1,6 @@
 # temp files
 ~$*.docx
+*.docx
 *.py
 __pycache__/
 
