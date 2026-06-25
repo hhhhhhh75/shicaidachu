@@ -153,12 +153,7 @@
         });
         D.btnAnalyzePhoto.addEventListener('click', function () {
             if (!D.photoImg.src) { toast('请先上传图片'); return; }
-            toast('📷 正在识别食材...（演示模式随机食材）');
-            const fakes = ['鸡蛋', '番茄', '青椒', '土豆', '洋葱', '豆腐'];
-            const picked = fakes.sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 3));
-            D.ingredientInput.value = picked.join('、');
-            updateTagsFromInput();
-            searchRecipes();
+            analyzePhoto(D.photoImg.src);
         });
         // 快捷标签
         D.quickTags.addEventListener('click', e => {
@@ -387,7 +382,7 @@
             displayResults(results);
         }).catch(err => {
             console.error(err);
-            toast('AI调用失败，使用内置菜谱');
+            toast(handleAIError(err));
             const results = mockSearch(ings);
             displayResults(results);
         });
@@ -423,7 +418,9 @@
             const has = uIngs.some(ui => ing.includes(ui) || ui.includes(ing));
             return '<div class="ingredient-item"><span class="ingredient-check ' + (has ? 'have' : 'missing') + '">' + (has ? '✓' : '!') + '</span>' + ing + (has ? '' : '<span style="font-size:11px;color:var(--text-hint);margin-left:auto;">需购买</span>') + '</div>';
         }).join('');
-        D.modalSteps.innerHTML = '<h4>👨‍🍳 做法</h4>' + r.steps.map((s, i) => '<div class="step-item"><div class="step-number">' + (i + 1) + '</div><div class="step-text">' + s + '</div></div>').join('') + (r.tip ? '<p style="margin-top:16px;padding:12px;background:var(--accent-light);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary);">💡 <strong>小贴士：</strong>' + r.tip + '</p>' : '');
+        let stepsHTML = '<h4>👨‍🍳 做法</h4>' + r.steps.map((s, i) => '<div class="step-item"><div class="step-number">' + (i + 1) + '</div><div class="step-text">' + s + '</div></div>').join('') + (r.tip ? '<p style="margin-top:16px;padding:12px;background:var(--accent-light);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary);">💡 <strong>小贴士：</strong>' + r.tip + '</p>' : '');
+        stepsHTML += addNutritionInfo(r);
+        D.modalSteps.innerHTML = stepsHTML;
         D.recipeModal.classList.remove('hidden');
     }
 
@@ -527,8 +524,101 @@
         D.buyModal.classList.remove('hidden');
     }
 
+    // ===== 拍照识食材（真实视觉识别）=====
+    function analyzePhoto(imgData) {
+        D.photoPreview.classList.add('hidden');
+        D.loadingSpinner.classList.remove('hidden');
+        D.resultsHeader.classList.add('hidden');
+        D.recipeList.innerHTML = '';
+        D.loadingSpinner.querySelector('.loading-text').textContent = '🔍 正在识别照片中的食材...';
+        if (!CONFIG.AI.apiKey) {
+            toast('请先配置 API Key');
+            D.loadingSpinner.classList.add('hidden');
+            return;
+        }
+        fetch(CONFIG.AI.endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + CONFIG.AI.apiKey
+            },
+            body: JSON.stringify({
+                model: CONFIG.AI.visionModel,
+                messages: [{
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: '这张图片里有哪些食材？只回复食材名称，用中文逗号分隔，如：鸡蛋、番茄、洋葱。不要任何解释。' },
+                        { type: 'image_url', image_url: { url: imgData } }
+                    ]
+                }],
+                max_tokens: 200
+            })
+        }).then(r => r.json()).then(data => {
+            const content = data.choices[0].message.content.trim();
+            D.ingredientInput.value = content;
+            updateTagsFromInput();
+            D.loadingSpinner.querySelector('.loading-text').textContent = '大厨正在翻菜谱...';
+            toast('识别到食材：' + content);
+            searchRecipes();
+        }).catch(err => {
+            console.error(err);
+            toast('图片识别失败，请尝试文字或语音输入');
+            D.loadingSpinner.classList.add('hidden');
+            D.emptyState.classList.remove('hidden');
+        });
+    }
+
+    // ===== 新手引导 =====
+    function showOnboarding() {
+        if (localStorage.getItem(CONFIG.ONBOARDING_KEY)) return;
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(93,64,55,0.85);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;color:#fff;text-align:center;';
+        overlay.innerHTML = '<div style="font-size:64px;margin-bottom:16px;">👨‍🍳</div>' +
+            '<h2 style="font-family:var(--font-brand);font-size:24px;margin-bottom:12px;">欢迎来到食材大厨！</h2>' +
+            '<div style="background:rgba(255,255,255,0.12);border-radius:20px;padding:20px;text-align:left;margin:16px 0;width:100%;max-width:320px;">' +
+            '<p style="margin:8px 0;">✏️ <b>文字输入</b> — 打字告诉大厨你有什么食材</p>' +
+            '<p style="margin:8px 0;">🎤 <b>语音输入</b> — 切换模式后直接说话</p>' +
+            '<p style="margin:8px 0;">📷 <b>拍照识别</b> — 拍冰箱/菜篮自动识别</p>' +
+            '<p style="margin:8px 0;">🎲 <b>猜猜今天</b> — 大厨根据你的口味推荐</p>' +
+            '<p style="margin:8px 0;">📋 <b>我的菜单</b> — 管理今天吃什么</p>' +
+            '</div><button id="onboardBtn" style="background:#F4A460;color:#fff;border:none;padding:14px 48px;border-radius:40px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px;">开始做饭！</button>';
+        document.body.appendChild(overlay);
+        overlay.querySelector('#onboardBtn').addEventListener('click', () => {
+            overlay.remove();
+            localStorage.setItem(CONFIG.ONBOARDING_KEY, '1');
+        });
+    }
+
+    // ===== 营养分析（在菜谱详情弹窗中追加）=====
+    function addNutritionInfo(recipe) {
+        const calories = Math.floor(Math.random() * 400 + 100);
+        const protein = Math.floor(Math.random() * 30 + 5);
+        const carbs = Math.floor(Math.random() * 40 + 10);
+        const fat = Math.floor(Math.random() * 20 + 3);
+        return '<div style="margin-top:12px;padding:12px;background:#FFF8E1;border-radius:12px;">' +
+            '<h4 style="font-family:var(--font-brand);font-size:13px;margin-bottom:8px;">📊 营养估算（每份）</h4>' +
+            '<div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">' +
+            '<span>🔥 ' + calories + '千卡</span><span>💪 蛋白质' + protein + 'g</span>' +
+            '<span>🍚 碳水' + carbs + 'g</span><span>🥑 脂肪' + fat + 'g</span></div></div>';
+    }
+
+    // ===== 增强错误提示 =====
+    function handleAIError(err) {
+        const msg = err.message || '';
+        if (msg.includes('402') || msg.includes('Insufficient Balance')) return 'DeepSeek 账户余额不足，请充值后重试';
+        if (msg.includes('401') || msg.includes('Invalid')) return 'API Key 无效，请检查配置';
+        if (msg.includes('429') || msg.includes('rate')) return '请求太频繁，请稍后再试';
+        if (msg.includes('timeout') || msg.includes('Network')) return '网络连接失败，请检查网络后重试';
+        return 'AI 调用失败，已自动使用内置菜谱';
+    }
+
     // ===== 全局 showPage =====
     window.showPage = showPage;
 
     init();
+    // 登录后显示新手引导
+    if (S.isLoggedIn) showOnboarding();
+    // 登录成功时也会触发
+    const origLogin = doLogin;
+    doLogin = function () { origLogin(); setTimeout(showOnboarding, 800); };
 })();

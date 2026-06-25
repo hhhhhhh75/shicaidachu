@@ -6,14 +6,17 @@ const CONFIG = {
     // V1.0 使用浏览器端 fetch 直接调用 —— 开发/演示模式用 mock 数据
     // 接入真实 API 时，建议通过后端代理（Vercel Serverless）调用，避免 API Key 暴露
     AI: {
-        mock: false,               // false=使用真实AI
+        mock: false,
         provider: 'deepseek',
         endpoint: 'https://api.deepseek.com/chat/completions',
-        apiKey: 'sk-54febcbee4a6485fa71fbd6bb20ce33b',               // ⚠️ 填你的 DeepSeek API Key（sk-xxx）
+        apiKey: 'sk-54febcbee4a6485fa71fbd6bb20ce33b',
         model: 'deepseek-chat',
         maxTokens: 1500,
         temperature: 0.8,
+        visionModel: 'deepseek-chat',  // DeepSeek 支持图片识别
     },
+    // 新手引导
+    ONBOARDING_KEY: 'scdc_onboarded',
 
     // ===== 后端 API 配置 =====
     // V1.0 先用 localStorage 模拟后端；接入真实后端时改 baseURL
